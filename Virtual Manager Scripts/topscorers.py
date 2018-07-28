@@ -12,7 +12,6 @@ team_code = str(464477) #Get team code
 team_page = requests.get("https://www.virtualmanager.com/clubs/" + team_code) #Take page of selected team
 
 team_soup = BeautifulSoup(team_page.content, 'html.parser')
-child_list = list(team_soup.children)
 
 #Find all players on the team page
 player_list = team_soup.find_all('td',class_='player')

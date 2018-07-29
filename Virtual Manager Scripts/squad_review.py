@@ -197,8 +197,14 @@ def list_as_lined_string(inp):
     if(type(inp) == list):
         if(type(inp[0]) == list):
             for item in inp:
-                list_string = list_string + item[0] + ' - To ' + item[1] + ' from ' + item[2] + ' for ' + item[3] + ' credits\n'
-    return(list_string[0:-2]) #To remove the last 'New Line'
+                if(item[1] == 'Dismissed'):
+                    list_string = list_string + item[0] + ' dismissed from the club\n'
+                elif(item[2] == 'Free Transfer'):
+                    list_string = list_string + item[0] + ' acquired on free transfer\n'
+                else:
+                    list_string = list_string + item[0] + ' - To [b]' + item[1] + '[/b] from [b]' + item[2] + '[/b] for ' + item[3] + ' C\n'
+    return(list_string[0:-1]) #To remove the last 'New Line'
+
 #------------------------------------------------------------------------------
     
 #Generate Squad Details

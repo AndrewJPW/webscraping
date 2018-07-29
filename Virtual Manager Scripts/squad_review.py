@@ -2,13 +2,14 @@
 """
 Created on Sun Jul 29 09:53:19 2018
 
-@author: Andrew
+@author: AndrewJPW
 """
-
+#------------------------------------------------------------------------------
 import requests
 from bs4 import BeautifulSoup
 
 team_code = str(464477)
+team_name = 'Phantom Phoenixes'
 url_name = 'https://www.virtualmanager.com/'
 team_page = requests.get(url_name + "clubs/" + team_code)
 
@@ -16,6 +17,7 @@ team_soup = BeautifulSoup(team_page.content, 'html.parser')
 
 player_list = team_soup.find_all('td',class_='player')
 
+#------------------------------------------------------------------------------
 #----------Team Stats----------
 
 #Final Position , Goals For Goals Against
@@ -63,7 +65,8 @@ for fixture in all_fixtures:
         if(len(goals) > 1):
             if(int(goals[0]) == 0 or int(goals[1]) == 0):
                 clean_sheets = clean_sheets + 1
-                
+
+#------------------------------------------------------------------------------                
 #----------Individual Player Stats----------
 
 player_list = team_soup.find_all('td',class_='player')
@@ -123,6 +126,44 @@ num_assists = str(max_assists[0]) + ' assists'
 squad_avg = highest_average[1]
 max_avg = str(highest_average[0]) + ' avg'
 
+#------------------------------------------------------------------------------
+#-----------Transfers-------------
+transfer_url = '/transfers?page=' 
+transfer_page = transfer_url + '1'
+next_page = True
+
+transfer_page = url_name + 'clubs/' + team_code + transfer_page
+transfers = requests.get(transfer_page)
+transfer_soup = BeautifulSoup(transfers.content,'html.parser')
+transfer_table = transfer_soup.find_all('div',class_='club_transfers')
+
+transfer_list = transfer_table[0].find_all('tr')
+
+transfers_in = []
+transfers_out = []
+
+for tf in transfer_list:
+    tf_clubs = tf.find_all('td')
+    if(len(tf_clubs) > 3):
+        tf_player_name = tf_clubs[0].get_text()
+        tf_club_to = tf_clubs[1].get_text()
+        tf_club_from = tf_clubs[2].get_text()
+        tf_fee = tf_clubs[3].get_text()
+        
+        if(tf_club_to == '-'):
+            tf_club_to = 'Dismissed'
+        if(tf_club_from == '-'):
+            tf_club_from = 'Free Transfer'
+
+        transfer = [tf_player_name,tf_club_to,tf_club_from,tf_fee]
+
+        if(tf_club_to == team_name):
+            transfers_in.append(transfer)
+        else:
+            transfers_out.append(transfer)
+            
+#------------------------------------------------------------------------------
+
 def get_position_text(pos):
     '''This method returns a string detailing the team position and a little explanation'''
     if(pos == '1'):
@@ -151,6 +192,15 @@ def select_pots():
     '''This method calculates the player most deserving of player of the season'''
     return 0
 
+def list_as_lined_string(inp):
+    list_string = ''
+    if(type(inp) == list):
+        if(type(inp[0]) == list):
+            for item in inp:
+                list_string = list_string + item[0] + ' - To ' + item[1] + ' from ' + item[2] + ' for ' + item[3] + ' credits\n'
+    return(list_string[0:-2]) #To remove the last 'New Line'
+#------------------------------------------------------------------------------
+    
 #Generate Squad Details
 
 squad_details = 'The Phoenixes finish the season in ' + get_position_text(final_pos) + '\n\n'
@@ -159,8 +209,10 @@ squad_details = squad_details + 'Most Goals: ' + top_scorer + " - " + str(num_go
 squad_details = squad_details + '[b]Team Stats[/b]\n'
 squad_details = squad_details + 'Final Position: ' + get_position(final_pos) + '\nGoals For: ' + str(goals_for) + '\nGoals Against: ' + str(goals_against) + '\nClean Sheets: ' + str(clean_sheets) + '\n'
 squad_details = squad_details + '\n\n[b]Player of the Season: [/b]\n'
-squad_details = squad_details + '\n\n[b]Transfers IN[/b]\n' 
-squad_details = squad_details + '\n\n[b]Transfers OUT[/b]\n'
+squad_details = squad_details + '\n\n[b]Transfers IN[/b]\n\n\n' 
+squad_details = squad_details + list_as_lined_string(transfers_in) + '\n\n'
+squad_details = squad_details + '[b]Transfers OUT[/b]\n'
+squad_details = squad_details + list_as_lined_string(transfers_out) + '\n'
 
 season_review_file = open('season_review.txt','w')
 season_review_file.write(squad_details)

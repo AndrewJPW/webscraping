@@ -128,40 +128,56 @@ max_avg = str(highest_average[0]) + ' avg'
 
 #------------------------------------------------------------------------------
 #-----------Transfers-------------
+
+def get_next_page(initial_URL,page_no):
+    
+    transfer_URL = initial_URL + str(page_no)
+    transfers = requests.get(transfer_URL)
+
+    return transfers
+
 transfer_url = '/transfers?page=' 
-transfer_page = transfer_url + '1'
-next_page = True
+page_number = 1
+transfers_url_name = url_name + 'clubs/' + team_code + transfer_url
 
-transfer_page = url_name + 'clubs/' + team_code + transfer_page
-transfers = requests.get(transfer_page)
-transfer_soup = BeautifulSoup(transfers.content,'html.parser')
-transfer_table = transfer_soup.find_all('div',class_='club_transfers')
-
-transfer_list = transfer_table[0].find_all('tr')
+transfer_request = get_next_page(transfers_url_name,page_number)
 
 transfers_in = []
 transfers_out = []
+page_plus = True
 
-for tf in transfer_list:
-    tf_clubs = tf.find_all('td')
-    if(len(tf_clubs) > 3):
-        tf_player_name = tf_clubs[0].get_text()
-        tf_club_to = tf_clubs[1].get_text()
-        tf_club_from = tf_clubs[2].get_text()
-        tf_fee = tf_clubs[3].get_text()
-        
-        if(tf_club_to == '-'):
-            tf_club_to = 'Dismissed'
-        if(tf_club_from == '-'):
-            tf_club_from = 'Free Transfer'
+while(transfer_request.status_code == 200 and page_plus == True):
+    transfer_request = get_next_page(transfers_url_name,page_number)
+    transfer_soup = BeautifulSoup(transfer_request.content,'html.parser')
+    transfer_table = transfer_soup.find_all('div',class_='club_transfers')
 
-        transfer = [tf_player_name,tf_club_to,tf_club_from,tf_fee]
+    transfer_list = transfer_table[0].find_all('tr')
+    page_number = page_number + 1
 
-        if(tf_club_to == team_name):
-            transfers_in.append(transfer)
-        else:
-            transfers_out.append(transfer)
-            
+    t_in_len = len(transfers_in)
+    t_out_len = len(transfers_out)
+    for tf in transfer_list:
+        tf_clubs = tf.find_all('td')
+        if(len(tf_clubs) > 3):
+            tf_player_name = tf_clubs[0].get_text()
+            tf_club_to = tf_clubs[1].get_text()
+            tf_club_from = tf_clubs[2].get_text()
+            tf_fee = tf_clubs[3].get_text()
+
+            if(tf_club_to == '-'):
+                tf_club_to = 'Dismissed'
+            if(tf_club_from == '-'):
+                tf_club_from = 'Free Transfer'
+
+            transfer = [tf_player_name,tf_club_to,tf_club_from,tf_fee]
+
+            if(tf_club_to == team_name):
+                transfers_in.append(transfer)
+            else:
+                transfers_out.append(transfer)
+                
+    if(t_in_len == len(transfers_in) and t_out_len == len(transfers_out)):
+        page_plus = False
 #------------------------------------------------------------------------------
 
 def get_position_text(pos):
@@ -187,10 +203,6 @@ def get_position(pos):
         return '3rd place'
     else:
         return final_pos + 'th place'
-    
-def select_pots():
-    '''This method calculates the player most deserving of player of the season'''
-    return 0
 
 def list_as_lined_string(inp):
     list_string = ''
@@ -215,7 +227,7 @@ squad_details = squad_details + 'Most Goals: ' + top_scorer + " - " + str(num_go
 squad_details = squad_details + '[b]Team Stats[/b]\n'
 squad_details = squad_details + 'Final Position: ' + get_position(final_pos) + '\nGoals For: ' + str(goals_for) + '\nGoals Against: ' + str(goals_against) + '\nClean Sheets: ' + str(clean_sheets) + '\n'
 squad_details = squad_details + '\n\n[b]Player of the Season: [/b]\n'
-squad_details = squad_details + '\n\n[b]Transfers IN[/b]\n\n\n' 
+squad_details = squad_details + '\n\n[b]Transfers IN[/b]\n\n' 
 squad_details = squad_details + list_as_lined_string(transfers_in) + '\n\n'
 squad_details = squad_details + '[b]Transfers OUT[/b]\n'
 squad_details = squad_details + list_as_lined_string(transfers_out) + '\n'
